@@ -1,0 +1,72 @@
+{
+  "1442": {
+    "address": "0xC9747D38F304d4bFeF0e24ffCA065764B4a1e0cd",
+    "chain": "1442",
+    "name": "Polygon zkEVM",
+    "currency": "ETH",
+    "rpcUrl": "https://rpc.public.zkevm-test.net"
+  },
+  "280": {
+    "address": "",
+    "chain": "280",
+    "name": "zksync",
+    "currency": "MNT",
+    "rpcUrl": "https://zksync-era-testnet.blockpi.network/v1/rpc/public"
+  },
+  "534351": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "534351",
+    "name": "Scroll Sepolia Testnet",
+    "currency": "ETH",
+    "rpcUrl": "https://scroll-sepolia.blockpi.network/v1/rpc/public"
+  },
+  "421613": {
+    "address": "",
+    "chain": "421613",
+    "name": "Arbitrum Goerli Testnet",
+    "currency": "ETH",
+    "rpcUrl": "https://goerli-rollup.arbitrum.io/rpc"
+  },
+  "88882": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "88882",
+    "name": "Chiliz Scoville Testnet",
+    "currency": "CHZ",
+    "rpcUrl": "https://chiliz-spicy.publicnode.com"
+  },
+  "84531": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "84531",
+    "name": "Base Goerli Testnet",
+    "currency": "ETH",
+    "rpcUrl": "https://goerli.base.org"
+  },
+  "44787": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "44787",
+    "name": "Celo Alfajores Testnet",
+    "currency": "CELO",
+    "rpcUrl": "https://alfajores-forno.celo-testnet.org"
+  },
+  "245022926": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "245022926",
+    "name": "Neon EVM DevNet",
+    "currency": "NEON",
+    "rpcUrl": "https://proxy.devnet.neonlabs.org/solana"
+  },
+  "5001": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "5001",
+    "name": "Mantle Testnet",
+    "currency": "ETH",
+    "rpcUrl": "https://rpc.testnet.mantle.xyz"
+  },
+  "59140": {
+    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "chain": "59140",
+    "name": "Linea Testnet",
+    "currency": "ETH",
+    "rpcUrl": "https://rpc.goerli.linea.build"
+  }
+}

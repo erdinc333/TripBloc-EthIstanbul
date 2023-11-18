@@ -1,0 +1,57 @@
+.crypto {
+  width: auto;
+  background-color: lightgray;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 50px;
+}
+
+.crypto-logos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 150px;
+  margin-top: 40px;
+}
+
+.crypto-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100px;
+  margin: 10px;
+  cursor: pointer;
+}
+
+.crypto-logo img {
+  transition: transform 0.03s ease;
+}
+
+.crypto-logo img:nth-child(even) {
+  transform: translateY(10px);
+}
+
+.crypto-logo img:hover {
+  transform: translateY(-5px);
+}
+
+
+.crypto-logo img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .crypto-logo {
+    width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .crypto-logo {
+    width: 60px;
+  }
+}
