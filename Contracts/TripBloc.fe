@@ -1,0 +1,76 @@
+contract TripBloc:
+    platform_owner: address
+
+    ProposalStatus: enum{PENDING, ACCEPTED, REJECTED}
+    RequestStatus: enum{PENDING, APPROVED, REJECTED}
+
+    struct Hotel:
+        owner: address
+        ens_name: string[64]
+        staking_fee: u256
+        room_fee: u256
+        # Simplified representation for proposal IDs
+        proposal_count: u256
+
+    struct Proposal:
+        user: address
+        date: u256
+        payment_amount: u256
+        status: ProposalStatus
+
+    struct Request:
+        requester: address
+        request_id: u256
+        payment_amount: u256
+        status: RequestStatus
+
+    hotels: map[u256, Hotel]
+    requests: map[u256, Request]
+    proposals: map[u256, map[u256, Proposal]]  # Nested mapping for proposals
+
+    @public
+    def __init__():
+        self.platform_owner = msg.sender
+
+    @public
+    def register_hotel(hotel_id: u256, ens_name: string[64], room_fee: u256):
+        assert self.hotels[hotel_id].staking_fee == 0, "Hotel already registered"
+        assert msg.value > 0, "Staking fee must be greater than 0"
+        self.hotels[hotel_id] = Hotel({owner: msg.sender, ens_name: ens_name, staking_fee: msg.value, room_fee: room_fee, proposal_count: 0})
+
+    @public
+    def send_proposal(hotel_id: u256, date: u256, payment_amount: u256):
+        assert msg.value == payment_amount, "Incorrect payment amount"
+        proposal_id = self.hotels[hotel_id].proposal_count
+        self.proposals[hotel_id][proposal_id] = Proposal({user: msg.sender, date: date, payment_amount: payment_amount, status: ProposalStatus.PENDING})
+        self.hotels[hotel_id].proposal_count += 1
+
+    @public
+    def accept_proposal(hotel_id: u256, proposal_id: u256):
+        assert self.hotels[hotel_id].owner == msg.sender, "Only hotel owner can call this function"
+        self.proposals[hotel_id][proposal_id].status = ProposalStatus.ACCEPTED
+        # Transfer payment logic (assuming available in FE)
+        send(self.hotels[hotel_id].owner, self.proposals[hotel_id][proposal_id].payment_amount)
+
+    @public
+    def reject_proposal(hotel_id: u256, proposal_id: u256):
+        assert msg.sender == self.platform_owner, "Only platform owner can call this function"
+        self.proposals[hotel_id][proposal_id].status = ProposalStatus.REJECTED
+        send(self.proposals[hotel_id][proposal_id].user, self.proposals[hotel_id][proposal_id].payment_amount)
+
+    @public
+    def raise_request(request_id: u256, payment_amount: u256):
+        assert msg.value == payment_amount, "Incorrect payment amount"
+        self.requests[request_id] = Request({requester: msg.sender, request_id: request_id, payment_amount: payment_amount, status: RequestStatus.PENDING})
+
+    @public
+    def approve_request(request_id: u256):
+        assert msg.sender == self.platform_owner, "Only platform owner can call this function"
+        self.requests[request_id].status = RequestStatus.APPROVED
+        send(self.requests[request_id].requester, self.requests[request_id].payment_amount)
+
+    @public
+    def reject_request(request_id: u256):
+        assert msg.sender == self.platform_owner, "Only platform owner can call this function"
+        self.requests[request_id].status = RequestStatus.REJECTED
+        send(self.requests[request_id].requester, self.requests[request_id].payment_amount)
