@@ -9,7 +9,7 @@ const mockHotels = [
     name: 'Hotel Sunshine',
     distance: '500m from city center',
     description:
-      'This is a delightful hotel offering sunny rooms and wonderful service, close to all the attractions.',
+      'This delightful hotel stands as an oasis of comfort and elegance, offering guests sunny, well-appointed rooms and exceptional service that exceed expectations. Nestled in a convenient location, it is a stone throw away from a plethora of attractions, making it the perfect base for travelers eager to explore the city vibrant culture and history.',
     rating: 8.5,
     cheapestPrice: 120,
     address: '500m from city center',

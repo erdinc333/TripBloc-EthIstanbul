@@ -14,19 +14,20 @@ import { useLocation } from 'react-router-dom';
 import mockHotels from '../../context/mockHotels';
 import { GateFiDisplayModeEnum, GateFiSDK } from '@gatefi/js-sdk';
 import toast from 'react-hot-toast';
-import { isApproved, sendProposal } from '../../backendConnectors/integration';
+import {
+  fetchDataFeed,
+  isApproved,
+  roomPrice,
+  sendProposal,
+} from '../../backendConnectors/integration';
 import { useWeb3ModalSigner } from '@web3modal/ethers5/react';
 import { Box, Modal, Typography } from '@mui/material';
 import { createChat } from '../../backendConnectors/push/push2';
 import protobuf from 'protobufjs';
-import {
-  createRelayNode,
-  createDecoder,
-  waitForRemotePeer,
-} from '@waku/sdk';
+import { createLightNode, createDecoder, waitForRemotePeer } from '@waku/sdk';
 import PushUI from './pushUI';
 import WakuUI from './wakuUI';
-import { eas } from '../../backendConnectors/EAS';
+
 const Hotel = () => {
   const ContentTopic = `/js-waku-examples/1/chat/proto`;
   const Decoder = createDecoder(ContentTopic);
@@ -45,14 +46,14 @@ const Hotel = () => {
   const [chatId, setChatId] = useState(null);
   const [waku, setWaku] = useState(undefined);
   const [messages, setMessages] = useState([]);
+  const [etherumPrice, setEtherumPrice] = useState(0);
+  const [roomPriceDemo, setRoomPriceDemo] = useState(0);
 
   const { loading } = useFetch(`/hotels/find/${id}`);
   const user =
     JSON.parse(localStorage.getItem('user')) &&
     JSON.parse(localStorage.getItem('user')).email;
   const { signer } = useWeb3ModalSigner();
-
-  const days = 28;
 
   const handleOpen = (i) => {
     setSlideNumber(i);
@@ -162,6 +163,7 @@ const Hotel = () => {
   const handleChat = async () => {
     const getChatID = await createChat(signer);
     setChatId(getChatID?.chatId);
+    localStorage.setItem('chatID', getChatID?.chatId);
   };
 
   const handleWakuSelect = async () => {
@@ -172,11 +174,13 @@ const Hotel = () => {
   async function initializeWaku() {
     if (waku) return;
 
-    const wakuNode = await createRelayNode({ defaultBootstrap: true });
+    const wakuNode = await createLightNode({ defaultBootstrap: true });
     await wakuNode.start();
-    await waitForRemotePeer(wakuNode, ['relay']);
+    await waitForRemotePeer(wakuNode);
 
-    wakuNode.relay.subscribe(Decoder, (wakuMessage) => {
+    const subscription = await wakuNode.filter.createSubscription();
+
+    subscription.subscribe(Decoder, (wakuMessage) => {
       if (!wakuMessage.payload) return;
       const decodedMessage = SimpleChatMessage.decode(wakuMessage.payload);
       setMessages((prevMessages) => [
@@ -191,19 +195,25 @@ const Hotel = () => {
     setWaku(wakuNode);
   }
 
+  const dataFeed = async () => {
+    let value = await fetchDataFeed();
+    setEtherumPrice(value._hex);
+  };
+
+  const getRoomPrice = async () => {
+    let value = await roomPrice();
+    setRoomPriceDemo(value._hex);
+  };
+
   useEffect(() => {
     checkApproval();
+    dataFeed();
+    getRoomPrice();
   }, []);
-
-
-  async function temp(){
-    console.log("working")
-    await eas(signer);
-  }
 
   return (
     <>
-      {(!chatId || !waku) && (
+      {!chatId || !waku ? (
         <>
           <Navbar type="list" />
           <Header type="list" />
@@ -242,23 +252,7 @@ const Hotel = () => {
                 style={{ position: 'absolute', left: '37%', zIndex: '1' }}
               />
               {showIframe && (
-                <button
-                  onClick={handleCloseEmbed}
-                  style={{
-                    position: 'absolute',
-                    right: '25%',
-                    transform: 'none',
-                    top: '15%',
-                    background: 'rgba(0, 0, 0, 0.7)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '5px',
-                    padding: '5px 15px',
-                    cursor: 'pointer',
-                    zIndex: 2000,
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  }}
-                >
+                <button onClick={handleCloseEmbed} className="close-btn">
                   Close
                 </button>
               )}
@@ -296,23 +290,37 @@ const Hotel = () => {
                     <p className="hotelDesc">{mockHotels[0].description}</p>
                   </div>
                   <div className="hotelDetailsPrice">
-                    <h1>Perfect for a {days}-night stay!</h1>
+                    <h1>Perfect for a per-night stay!</h1>
                     <span>
                       Located in the real heart of Krakow, this property has an
                       excellent location score of 9.8!
                     </span>
                     <h2>
-                      <b>${days * mockHotels[0].cheapestPrice}</b> ({days}{' '}
-                      nights)
+                      <b>
+                        {Number(
+                          parseInt(etherumPrice) / 1000000000000000000
+                        ).toFixed(2) *
+                          Number(
+                            parseInt(roomPriceDemo) / 1000000000000000000
+                          ).toFixed(2) || 0}
+                      </b>
+                      (per nights)
+                      <br />
+                      <span>
+                        ETH Value ={' '}
+                        {Number(
+                          parseInt(etherumPrice) / 1000000000000000000
+                        ).toFixed(2) || 0}
+                      </span>
                     </h2>
                     <button onClick={handleClick}>
                       {getButtonStatusText()}
                     </button>
                     <button
                       disabled={!!!signer}
-                      onClick={temp}
+                      onClick={() => setOpenModal(true)}
                     >
-                      Communicationssssssss
+                      Communication
                     </button>
                   </div>
                 </div>
@@ -324,7 +332,7 @@ const Hotel = () => {
               <Box className="box-flex">
                 <Box className="box-inside-flex" onClick={handleChat}>
                   <img
-                    src="https://push.org/assets/docs/PushLogoTextDark.svg"
+                    src="https://storage.googleapis.com/ethglobal-api-production/organizations%2F10a1v%2Flogo%2F1664802172170_aiOxYOJI_400x400.jpeg"
                     loading="lazy"
                     alt="Push Protocol"
                   />
@@ -336,7 +344,7 @@ const Hotel = () => {
               <Box className="box-flex">
                 <Box className="box-inside-flex" onClick={handleWakuSelect}>
                   <img
-                    src="https://waku.org/theme/image/logo.svg"
+                    src="https://storage.googleapis.com/ethglobal-api-production/organizations%2Fpyhsm%2Flogo%2F1697648764524_waku%20logo.jpeg"
                     loading="lazy"
                     alt="Waku Protocol"
                   />
@@ -345,10 +353,17 @@ const Hotel = () => {
                   </Typography>
                 </Box>
               </Box>
+              <Box className="box-flex">
+                <Box className="box-inside-flex">
+                  <Typography variant="caption" component="h6">
+                    Web3Inbox
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
           </Modal>
         </>
-      )}
+      ) : null}
       {waku && <WakuUI waku={waku} messages={messages} />}
       {chatId && <PushUI chatId={chatId} />}
     </>

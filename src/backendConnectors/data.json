@@ -1,6 +1,6 @@
 {
   "1442": {
-    "address": "0xC9747D38F304d4bFeF0e24ffCA065764B4a1e0cd",
+    "address": "0x58b45E3FD21bd19D51397f41d78276Cb06b8a538",
     "chain": "1442",
     "name": "Polygon zkEVM",
     "currency": "ETH",
@@ -56,7 +56,7 @@
     "rpcUrl": "https://proxy.devnet.neonlabs.org/solana"
   },
   "5001": {
-    "address": "0x1Dd6D563ae2A42f186ed30D2135B2B743875561E",
+    "address": "",
     "chain": "5001",
     "name": "Mantle Testnet",
     "currency": "ETH",

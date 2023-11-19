@@ -1,8 +1,9 @@
 import { createEncoder } from '@waku/sdk';
 import protobuf from 'protobufjs';
-import React from 'react';
+import React, { useState } from 'react';
 
 const WakuUI = ({ waku, messages }) => {
+  const [inputMessage, setInputMessage] = useState('');
   const ContentTopic = `/js-waku-examples/1/chat/proto`;
   const Encoder = createEncoder({ contentTopic: ContentTopic });
 
@@ -19,22 +20,30 @@ const WakuUI = ({ waku, messages }) => {
         text: message,
       });
       const payload = SimpleChatMessage?.encode(protoMsg)?.finish();
-      let value = await waku.relay.send(Encoder, { payload });
-      console.log('Message sent', value);
+      let value = await waku.lightPush.send(Encoder, { payload });
     } catch (e) {
       console.log('Send Custom Message');
     }
   };
-  
+
+  const handleSubmit = () => {
+    sendMessage(inputMessage);
+    setInputMessage('');
+  };
+
   return (
     <>
       <div className="chat-interface">
-        <button onClick={() => sendMessage('Hello from Waku!')}>
-          Send Waku Message
-        </button>
+        <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          placeholder="Type your message here"
+        />
+        <button onClick={handleSubmit}>Send Waku Message</button>
         <ul>
           {messages.map((msg, index) => (
-            <li key={index}>{msg.payloadAsUtf8}</li>
+            <li key={index}>{msg.text}</li>
           ))}
         </ul>
       </div>
