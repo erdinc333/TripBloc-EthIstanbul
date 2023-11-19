@@ -2,6 +2,8 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+- **Contract Address for most chains:** 0x1Dd6D563ae2A42f186ed30D2135B2B743875561E
+
 ## Available Scripts
 
 In the project directory, you can run:
