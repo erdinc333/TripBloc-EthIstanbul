@@ -50,9 +50,6 @@ const Hotel = () => {
   const [roomPriceDemo, setRoomPriceDemo] = useState(0);
 
   const { loading } = useFetch(`/hotels/find/${id}`);
-  const user =
-    JSON.parse(localStorage.getItem('user')) &&
-    JSON.parse(localStorage.getItem('user')).email;
   const { signer } = useWeb3ModalSigner();
 
   const handleOpen = (i) => {
@@ -74,13 +71,7 @@ const Hotel = () => {
   };
 
   const handleClick = async () => {
-    if (!user) {
-      toast('Please Login !!!', {
-        icon: '👨‍💻',
-      });
-    } else {
-      sendProposal(signer);
-    }
+    sendProposal(signer);
   };
 
   const generateRandomHex = (size) => {
@@ -203,6 +194,28 @@ const Hotel = () => {
   const getRoomPrice = async () => {
     let value = await roomPrice();
     setRoomPriceDemo(value._hex);
+  };
+
+  const handleWeb3Inbox = async () => {
+    const response = await fetch(
+      'https://notify.walletconnect.com/fb989323951b178ce95251fbb3c62192/notify',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer d5a162fd-7f01-4282-9f13-d975b2619f87',
+        },
+        body: JSON.stringify({
+          notification: {
+            type: '2ee309f6-17f8-4e21-b947-b0c89070cac6',
+            title: 'Notification Title',
+            body: 'Notification body',
+          },
+          accounts: ['eip155:1442:0xEF4f36c338a9518F5bb7519b90a97ef297657e73'],
+        }),
+      }
+    );
+    console.log('response', response);
+    return response;
   };
 
   useEffect(() => {
@@ -354,7 +367,7 @@ const Hotel = () => {
                 </Box>
               </Box>
               <Box className="box-flex">
-                <Box className="box-inside-flex">
+                <Box className="box-inside-flex" onClick={handleWeb3Inbox}>
                   <Typography variant="caption" component="h6">
                     Web3Inbox
                   </Typography>

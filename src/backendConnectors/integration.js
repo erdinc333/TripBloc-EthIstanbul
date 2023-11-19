@@ -55,7 +55,7 @@ export async function hotelOwnerAddress() {
 
 export async function nextIDAuth(devAuth) {
   try {
-    const provider = ethers.getDefaultProvider()
+    const provider = ethers.getDefaultProvider();
     let address = await provider.resolveName(devAuth);
     return address;
   } catch (e) {
@@ -91,6 +91,28 @@ export async function roomPrice() {
   }
 }
 
+const handleWeb3Inbox = async () => {
+  const response = await fetch(
+    'https://notify.walletconnect.com/fb989323951b178ce95251fbb3c62192/notify',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer d5a162fd-7f01-4282-9f13-d975b2619f87',
+      },
+      body: JSON.stringify({
+        notification: {
+          type: '2ee309f6-17f8-4e21-b947-b0c89070cac6',
+          title: 'Notification Title',
+          body: 'Notification body',
+        },
+        accounts: ['eip155:1442:0xEF4f36c338a9518F5bb7519b90a97ef297657e73'],
+      }),
+    }
+  );
+  console.log('response', response);
+  return response;
+};
+
 //action
 export async function sendProposal(signer) {
   let contractAddress = await getAddress();
@@ -98,6 +120,7 @@ export async function sendProposal(signer) {
   let tx = await contract.sendProposal(1, 1, '100', {
     value: '100',
   });
+  handleWeb3Inbox();
 }
 export async function acceptProposal(signer) {
   let contractAddress = await getAddress();

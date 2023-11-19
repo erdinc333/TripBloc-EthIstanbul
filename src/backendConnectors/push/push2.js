@@ -51,6 +51,6 @@ export async function createChat(signer) {
       },
     }
   );
-
+  console.log("push chat id",createTokenGatedGroup.chatId);
   return createTokenGatedGroup;
 }
