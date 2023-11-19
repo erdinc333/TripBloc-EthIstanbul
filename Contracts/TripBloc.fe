@@ -1,76 +1,126 @@
-contract TripBloc:
-    platform_owner: address
+// SPDX-License-Identifier: MIT
 
-    ProposalStatus: enum{PENDING, ACCEPTED, REJECTED}
-    RequestStatus: enum{PENDING, APPROVED, REJECTED}
+module TripBloc {
+    use std::collections::HashMap;
 
-    struct Hotel:
-        owner: address
-        ens_name: string[64]
-        staking_fee: u256
-        room_fee: u256
-        # Simplified representation for proposal IDs
-        proposal_count: u256
+    pub struct Hotel {
+        pub owner: address,
+        pub ensName: string,
+        pub stakingFee: u256,
+        pub roomFee: u256,
+        pub proposals: HashMap<u256, Proposal>,
+        pub proposalIds: Vec<u256>,
+    }
 
-    struct Proposal:
-        user: address
-        date: u256
-        payment_amount: u256
-        status: ProposalStatus
+    pub struct Proposal {
+        pub user: address,
+        pub date: u256,
+        pub paymentAmount: u256,
+        pub status: ProposalStatus,
+    }
 
-    struct Request:
-        requester: address
-        request_id: u256
-        payment_amount: u256
-        status: RequestStatus
+    enum ProposalStatus { Pending, Accepted, Rejected }
 
-    hotels: map[u256, Hotel]
-    requests: map[u256, Request]
-    proposals: map[u256, map[u256, Proposal]]  # Nested mapping for proposals
+    pub struct Request {
+        pub requester: address,
+        pub requestId: u256,
+        pub paymentAmount: u256,
+        pub status: RequestStatus,
+    }
 
-    @public
-    def __init__():
-        self.platform_owner = msg.sender
+    enum RequestStatus { Pending, Approved, Rejected }
 
-    @public
-    def register_hotel(hotel_id: u256, ens_name: string[64], room_fee: u256):
-        assert self.hotels[hotel_id].staking_fee == 0, "Hotel already registered"
-        assert msg.value > 0, "Staking fee must be greater than 0"
-        self.hotels[hotel_id] = Hotel({owner: msg.sender, ens_name: ens_name, staking_fee: msg.value, room_fee: room_fee, proposal_count: 0})
+    pub mut hotels: HashMap<u256, Hotel> = HashMap::new();
+    pub mut requests: HashMap<u256, Request> = HashMap::new();
 
-    @public
-    def send_proposal(hotel_id: u256, date: u256, payment_amount: u256):
-        assert msg.value == payment_amount, "Incorrect payment amount"
-        proposal_id = self.hotels[hotel_id].proposal_count
-        self.proposals[hotel_id][proposal_id] = Proposal({user: msg.sender, date: date, payment_amount: payment_amount, status: ProposalStatus.PENDING})
-        self.hotels[hotel_id].proposal_count += 1
+    pub event HotelRegistered(u256 hotelId, address owner, string ensName, u256 stakingFee, u256 roomFee);
+    pub event ProposalSubmitted(u256 hotelId, address user, u256 date, u256 paymentAmount, u256 proposalId);
+    pub event ProposalStatusUpdated(u256 hotelId, u256 proposalId, ProposalStatus status);
+    pub event RequestRaised(u256 requestId, address requester, u256 paymentAmount);
+    pub event RequestStatusUpdated(u256 requestId, RequestStatus status);
 
-    @public
-    def accept_proposal(hotel_id: u256, proposal_id: u256):
-        assert self.hotels[hotel_id].owner == msg.sender, "Only hotel owner can call this function"
-        self.proposals[hotel_id][proposal_id].status = ProposalStatus.ACCEPTED
-        # Transfer payment logic (assuming available in FE)
-        send(self.hotels[hotel_id].owner, self.proposals[hotel_id][proposal_id].payment_amount)
+    pub fn onlyPlatformOwner(ctx: Context) {
+        require(ctx.sender == platformOwner(), "Only platform owner can call this function");
+    }
 
-    @public
-    def reject_proposal(hotel_id: u256, proposal_id: u256):
-        assert msg.sender == self.platform_owner, "Only platform owner can call this function"
-        self.proposals[hotel_id][proposal_id].status = ProposalStatus.REJECTED
-        send(self.proposals[hotel_id][proposal_id].user, self.proposals[hotel_id][proposal_id].payment_amount)
+    pub fn onlyHotelOwner(ctx: Context, hotelId: u256) {
+        require(hotels[hotelId].owner == ctx.sender, "Only hotel owner can call this function");
+    }
 
-    @public
-    def raise_request(request_id: u256, payment_amount: u256):
-        assert msg.value == payment_amount, "Incorrect payment amount"
-        self.requests[request_id] = Request({requester: msg.sender, request_id: request_id, payment_amount: payment_amount, status: RequestStatus.PENDING})
+    pub fn isValidHotel(hotelId: u256) -> bool {
+        hotels[hotelId].stakingFee > 0
+    }
 
-    @public
-    def approve_request(request_id: u256):
-        assert msg.sender == self.platform_owner, "Only platform owner can call this function"
-        self.requests[request_id].status = RequestStatus.APPROVED
-        send(self.requests[request_id].requester, self.requests[request_id].payment_amount)
+    pub fn isValidProposal(hotelId: u256, proposalId: u256) -> bool {
+        hotels[hotelId].proposals[proposalId].user != address(0)
+    }
 
-    @public
-    def reject_request(request_id: u256):
-        assert msg.sender == self.platform_owner, "Only platform owner can call this function"
-        self.requests[request_id].status = RequestStatus.REJECTED
-        send(self.requests[request_id].requester, self.requests[request_id].payment_amount)
+    pub fn isValidRequest(requestId: u256) -> bool {
+        requests[requestId].requester != address(0)
+    }
+
+    pub fn platformOwner() -> address {
+        platformOwner
+    }
+
+    pub fn registerHotel(ctx: Context, hotelId: u256, ensName: string, roomFee: u256) {
+        require(!isValidHotel(hotelId), "Hotel already registered");
+        require(ctx.value > 0, "Staking fee must be greater than 0");
+
+        let mut newHotel = Hotel {
+            owner: ctx.sender,
+            ensName: ensName,
+            stakingFee: ctx.value,
+            roomFee: roomFee,
+            proposals: HashMap::new(),
+            proposalIds: Vec::new(),
+        };
+
+        hotels[hotelId] = newHotel;
+
+        emit HotelRegistered(hotelId, newHotel.owner, ensName, ctx.value, roomFee);
+    }
+
+    pub fn sendProposal(ctx: Context, hotelId: u256, date: u256, paymentAmount: u256) {
+        require(isValidHotel(hotelId), "Hotel does not exist");
+        require(ctx.value == paymentAmount, "Incorrect payment amount");
+
+        let mut hotel = &mut hotels[hotelId];
+
+        let proposalId = hotel.proposalIds.len();
+        let mut newProposal = Proposal {
+            user: ctx.sender,
+            date: date,
+            paymentAmount: paymentAmount,
+            status: ProposalStatus::Pending,
+        };
+
+        hotel.proposals[proposalId] = newProposal;
+        hotel.proposalIds.push(proposalId);
+
+        emit ProposalSubmitted(hotelId, newProposal.user, date, paymentAmount, proposalId);
+    }
+
+    pub fn getHotelProposalIds(hotelId: u256) -> Vec<u256> {
+        hotels[hotelId].proposalIds
+    }
+
+    pub fn approveRequest(ctx: Context, requestId: u256) {
+    require(isValidRequest(requestId), "Request does not exist");
+    require(onlyPlatformOwner(ctx), "Only platform owner can call this function");
+
+    requests[requestId].status = RequestStatus::Approved;
+    payable(requests[requestId].requester).transfer(requests[requestId].paymentAmount);
+
+    emit RequestStatusUpdated(requestId, RequestStatus::Approved);
+}
+
+pub fn rejectRequest(ctx: Context, requestId: u256) {
+    require(isValidRequest(requestId), "Request does not exist");
+    require(onlyPlatformOwner(ctx), "Only platform owner can call this function");
+
+    requests[requestId].status = RequestStatus::Rejected;
+    payable(requests[requestId].requester).transfer(requests[requestId].paymentAmount);
+
+    emit RequestStatusUpdated(requestId, RequestStatus::Rejected);
+}
